@@ -1,0 +1,4 @@
+# renders and large intermediates stay out of git; notes + project files + scripts go in
+*.hip.tmp
+__pycache__/
+.DS_Store

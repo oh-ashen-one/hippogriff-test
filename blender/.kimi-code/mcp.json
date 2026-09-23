@@ -1,0 +1,1 @@
+{"mcpServers": {"blender": {"command": "/opt/homebrew/bin/uvx", "args": ["--from", "blender-mcp==1.9.1", "blender-mcp"], "env": {"BLENDER_HOST": "127.0.0.1", "BLENDER_PORT": "9876"}}}}
