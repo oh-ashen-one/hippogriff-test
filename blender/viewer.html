@@ -28,9 +28,17 @@
     font: 13px/1.5 ui-monospace, Menlo, monospace; color: #ff9b9b;
     max-width: 70ch; text-align: center; white-space: pre-wrap; z-index: 20;
   }
+  #label {
+    position: fixed; top: 18px; left: 18px; z-index: 15;
+    font: 700 15px/1.25 -apple-system, BlinkMacSystemFont, "SF Pro Text", Helvetica, Arial, sans-serif;
+    color: #fff; background: rgba(0,0,0,.72); border-radius: 6px;
+    padding: 10px 14px; pointer-events: none; letter-spacing: .2px;
+  }
+  #label small { display: block; font-weight: 400; opacity: .75; margin-top: 3px; }
 </style>
 </head>
 <body>
+<div id="label">4 | RECOLOURED ANIMATED GLB<small>glTF asset - press Play</small></div>
 <div id="status">loading&hellip;</div>
 <div id="ui">
   <button id="toggle">Play</button>
