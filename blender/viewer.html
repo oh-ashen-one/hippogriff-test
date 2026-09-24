@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hippogriff - animated asset</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #12151b; }
+  canvas { display: block; }
+  #ui {
+    position: fixed; left: 0; right: 0; bottom: 22px;
+    display: flex; gap: 12px; align-items: center; justify-content: center;
+    font: 13px/1.2 -apple-system, BlinkMacSystemFont, "SF Pro Text", Helvetica, Arial, sans-serif;
+    color: #d7dde8; user-select: none; z-index: 10;
+  }
+  button {
+    font: 600 14px/1 -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+    color: #0e1116; background: #e8c47a; border: 0; border-radius: 999px;
+    padding: 11px 26px; cursor: pointer; letter-spacing: .3px;
+  }
+  button:hover { background: #f2d18e; }
+  #status {
+    position: fixed; top: 18px; left: 0; right: 0; text-align: center;
+    font: 12px/1.4 -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+    color: #8d97a8; z-index: 10; pointer-events: none;
+  }
+  #err {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    font: 13px/1.5 ui-monospace, Menlo, monospace; color: #ff9b9b;
+    max-width: 70ch; text-align: center; white-space: pre-wrap; z-index: 20;
+  }
+</style>
+</head>
+<body>
+<div id="status">loading&hellip;</div>
+<div id="ui">
+  <button id="toggle">Play</button>
+</div>
+<div id="err"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const statusEl = document.getElementById('status');
+const errEl = document.getElementById('err');
+const toggle = document.getElementById('toggle');
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x12151b);
+scene.fog = new THREE.Fog(0x12151b, 40, 130);
+
+const camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.05, 3000);
+
+// ---- lighting ----
+scene.add(new THREE.HemisphereLight(0xbcd2ff, 0x2a2118, 1.35));
+
+const key = new THREE.DirectionalLight(0xfff2dd, 2.5);
+key.position.set(4, 6, 5);
+scene.add(key);
+
+const rim = new THREE.DirectionalLight(0x9ec4ff, 1.1);
+rim.position.set(-5, 2, -6);
+scene.add(rim);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.enablePan = false;
+controls.minDistance = 1.5;
+controls.maxDistance = 60;
+
+let mixer = null;
+let clips = [];
+let followTarget = null;
+let playing = true;
+const prevPos = new THREE.Vector3();
+const tmp = new THREE.Vector3();
+let first = true;
+
+function frameCamera(centre, radius) {
+  const dir = new THREE.Vector3(1.0, -0.55, 0.85).normalize();
+  camera.position.copy(centre).addScaledVector(dir, radius * 2.35);
+  controls.target.copy(centre);
+  camera.updateProjectionMatrix();
+  controls.update();
+}
+
+new GLTFLoader().load(
+  'hippogriff_animated.glb',
+  (gltf) => {
+    const model = gltf.scene;
+    scene.add(model);
+
+    // skinned mesh drives the follow camera
+    model.traverse((o) => {
+      if (o.isSkinnedMesh && !followTarget) followTarget = o;
+    });
+    if (!followTarget) followTarget = model;
+
+    mixer = new THREE.AnimationMixer(model);
+    clips = gltf.animations || [];
+    // the rig, the bank and the flight path are separate clips: play them together
+    for (const c of clips) {
+      const a = mixer.clipAction(c);
+      a.setLoop(THREE.LoopRepeat, Infinity);
+      a.play();
+    }
+
+    const box = new THREE.Box3().setFromObject(model);
+    const centre = box.getCenter(new THREE.Vector3());
+    const radius = Math.max(box.getSize(new THREE.Vector3()).length(), 1.5);
+    frameCamera(centre, radius);
+    prevPos.copy(centre);
+
+    clock.getDelta();   // discard the load-time gap
+    animate();          // only spin the render loop once there is something to draw
+
+    toggle.textContent = 'Pause';
+    statusEl.textContent = clips.length
+      ? clips.length + ' clips | ' + clips.map((c) => c.name).join('  |  ')
+      : 'no animation clips found';
+  },
+  (xhr) => {
+    if (xhr.total) {
+      statusEl.textContent = 'loading ' + Math.round((xhr.loaded / xhr.total) * 100) + '%';
+    }
+  },
+  (e) => {
+    statusEl.textContent = '';
+    errEl.textContent = 'Could not load hippogriff_animated.glb\n' + (e && e.message ? e.message : e);
+  }
+);
+
+toggle.addEventListener('click', () => {
+  playing = !playing;
+  if (mixer) mixer.timeScale = playing ? 1 : 0;
+  toggle.textContent = playing ? 'Pause' : 'Play';
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') { e.preventDefault(); toggle.click(); }
+});
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+const clock = new THREE.Clock();
+
+function animate() {
+  requestAnimationFrame(animate);
+  const dt = clock.getDelta();
+  if (mixer) mixer.update(dt);
+
+  // the creature flies along its path, so the camera rides along with it
+  if (followTarget) {
+    tmp.setFromMatrixPosition(followTarget.matrixWorld);
+    if (first) { prevPos.copy(tmp); first = false; }
+    tmp.sub(prevPos);
+    camera.position.add(tmp);
+    controls.target.add(tmp);
+    prevPos.add(tmp);
+  }
+
+  controls.update();
+  renderer.render(scene, camera);
+}
+</script>
+</body>
+</html>
