@@ -1,3 +1,5 @@
 frames/
 *.log
 __pycache__/
+frames_solo/
+*.blend1
