@@ -42,3 +42,50 @@ NOT delivered:
 - Geometry: 50,744 prims, UVs present, texture 8192x8192 readable.
 - Stills: 1920x1080 PNGs verified on disk (sizes in repo).
 - Renders verified by reading back output files, per the brief.
+
+## Apprentice render workaround — attempt log (laptop session)
+
+Goal: actually render the Houdini animation, since no rendered clip was ever delivered.
+
+### What was fixed (real, verified)
+
+1. **The blocker is genuinely removable.** husk rejects UsdLux light prims under
+   Apprentice. Replacing `/stage/sky` (karmaskydomelight) and `/stage/sun`
+   (distantlight) with **emissive geometry** — the scene already contains a
+   500-radius `skydome` mesh with a `sky_mat` that was designed to be emissive —
+   makes `husk` run and write output files instead of producing black frames.
+   Script: `scripts/hou_fix_stage.py`.
+2. **A real camera bug.** `/stage/cam` is aimed **away** from the creature:
+   it sits at `(-1.17, 2.28, 19.71)` with `ry=218`, while the creature's
+   look-at direction from there needs `ry≈34.6`. Corrected by computing the
+   look-at Euler angles and setting `tx/ty/tz/rx/ry/rz`. This measurably changed
+   the render, so the camera was genuinely mis-set. Script: `scripts/hou_cam_fix.py`.
+
+### What is still broken
+
+3. **The MaterialX creature material is not honoured by husk.** Forcing
+   `hippogriff_mat.base_color` to flat red `(0.85, 0.12, 0.12)` with the texture
+   disconnected produced a frame whose average colour was `(205,205,205)` — no red
+   at all. The exported stage binds `/materials/hippogriff_mat` but its surface
+   output resolves to `hippogriff_mat_preview`, a `UsdPreviewSurface`, which
+   renders white. This matches the original contender's note about the mtlx graph
+   dying. Authoring a proper `UsdPreviewSurface` + `UsdUVTexture` (reading
+   `primvars:st`, which exists and is valid) over it in a stronger USD layer did
+   not change the result either.
+4. **The environment dominates the frame.** Rendering the scene with the creature
+   *destroyed* still produces the same ~383 KB image, so the large white shape is
+   the emissive dome/cloud geometry, not the creature. With the dome removed the
+   background renders pure white.
+
+### Status
+
+Not delivered: a viewable frame of the creature. `husk` now runs, the light-prim
+blocker is solved, and the camera bug is fixed, but the material fallback plus the
+emissive environment mean no frame has yet shown the creature. Next steps are to
+replace the creature's material with a hand-authored `UsdPreviewSurface` bound
+directly (bypassing the mtlib/mtlx path entirely), and to render the creature
+against a plain background rather than the emissive dome.
+
+Honest read: the "real Houdini render" route is closer than it was — husk works
+now — but it is still not producing a usable image, and the fast reliable path
+remains rendering the exported Houdini animation in Blender.
