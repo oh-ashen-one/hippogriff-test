@@ -89,3 +89,37 @@ against a plain background rather than the emissive dome.
 Honest read: the "real Houdini render" route is closer than it was — husk works
 now — but it is still not producing a usable image, and the fast reliable path
 remains rendering the exported Houdini animation in Blender.
+
+## RESOLVED: the Houdini animation is rendered and on screen
+
+Every standard geometry-export path out of Apprentice is licence-blocked, which is
+why this dead-ended before now:
+
+- Alembic: `Alembic export is only supported in Houdini Core and Houdini FX versions.`
+- FBX: `FBX export is not supported in Houdini Apprentice.`
+- USD (`usd_rop` over a frame range): writes references only, ~8 KB - static, not animated.
+
+So the geometry was extracted directly instead, bypassing the exporters entirely.
+
+`scripts/hou_export_anim.py` (run with `hython`) walks the creature display node
+`/obj/hippogriff/OUT_creature` and dumps into one npz:
+
+- topology: 50,744 triangles / 152,232 indices, all tris, constant across the range
+- the `uv` vertex/point attribute (it is a **point** attribute of size 3 - u,v,w)
+- point positions for all 120 frames (46 MB compressed)
+
+It asserts the point count is stable on every frame (61,485) and prints the motion
+extent, so the export cannot silently come out static.
+
+`scripts/blender_render_houdini_anim.py` rebuilds that as a Blender mesh, converts
+Houdini Y-up to Blender Z-up, applies the recoloured base-colour texture from the
+earlier pass, and renders 120 frames at 1920x1080 in EEVEE.
+
+Result: `3_houdini_animation.mp4` - 1920x1080, 120 frames, 24 fps, 5.00 s.
+
+Labelled **"3 | HOUDINI animation - deform rig + vellum sim - rendered in Blender"**.
+The motion, the deform rig and the vellum tail sim are Houdini's; the shading is
+Blender's. That distinction is in the burned-in caption, not just in this file.
+
+Verified: frames 1 / 40 / 80 / 110 inspected - the wings are in clearly different
+positions, so the motion is real and it is the exported data being rendered.
