@@ -111,32 +111,49 @@ still there - `hippogriff_flight.blend` still renders washed out at exposure 0.
 The asset export sidesteps it (a viewer lights the model itself), but any future
 render from that scene should fix the lighting, not the material.
 
-## Correction: the Houdini screen recording contains no Houdini content
+## Correction: the Houdini animation DOES work (an earlier note here was wrong)
 
-The earlier note on `houdini/flight_screenrec.mov` (added with the recolour
-commit) said it was "the GUI viewport capture of the completed animation". That
-was wrong, and the 0.5 s frame I originally checked did not show it.
+My previous correction claimed the Houdini contender "produced no moving-image evidence
+at all". **That was wrong and I withdraw it.** It generalised from one empty capture file
+to the entire deliverable - the same mistake I had just criticised, made one level up.
+The erroneous text has been removed rather than left standing; git history keeps it.
 
-Sampled across the full 8 s (contact sheet of every 50th frame, plus a
-full-resolution crop of the Houdini window for the whole timeline):
+Verified directly against `houdini/hippogriff_flight.hip` with `hython`, no GUI, sampling
+the creature display node at frames 1 / 40 / 80 / 120:
 
-- The Houdini viewport is **empty for the entire clip** - dark grey, just the
-  network editor and parameter panes, no creature, no geometry, no render.
-- The only creature on screen is the **Blender render playing in QuickTime**,
-  beside it.
-- The clip ends on a black frame.
+    f1    61485 pts  bbox (-1.3141,-0.0425,-1.0919)-(1.3300, 2.1706, 1.1459)
+    f40   61485 pts  bbox (-1.3185,-0.0874,-1.0919)-(1.3344, 2.1269, 1.1528)   changed
+    f80   61485 pts  bbox (-1.3369,-0.1277,-1.0919)-(1.3703, 1.9184, 1.1531)   changed
+    f120  61485 pts  bbox (-1.2892,-0.0909,-1.0919)-(1.2873, 1.9623, 1.1386)   changed
 
-So the Houdini contender produced **no moving-image evidence at all**. Its
-*hero stills* are the whole of its visual output, and they are three
-1920x1080 images upscaled from 1280x720 Apprentice renders: pure white
-background (no sky, no environment), untextured, and each carrying the Houdini
-watermark.
+Point positions and bounding box change across every sampled frame. The static source
+import (`/obj/hippogriff_src`) is unchanged across the same frames, which is the control.
+**The animation is real, and the scene is structurally complete:**
 
-Consequence for the comparison: it is not render-vs-render, and not even
-render-vs-viewport. It is a finished 1080p Blender render against three
-watermarked stills. Any future "Houdini vs Blender" claim should say that
-plainly.
+- `/obj/hippogriff`: `masks` -> `rest_unfold` -> `anim_deform` (VEX deform rig),
+  `tail_src`/`body_wo_tail` splits, `vcloth`/`vpin` vellum constraints, `vsolver`
+  vellum solver, `light_bake`, `OUT_creature`.
+- `/stage`: `creature` sopimport, `clouds`, `merge_scene`, `matlib`,
+  `assign_creature_mat`, `karmaskydomelight`, `distantlight`, `karmarendersettings`,
+  `usdrender_rop`, `usd_rop`.
+- 24 fps, frames 1-120.
 
-`make_labeled_reviews.sh` now also emits `3_houdini_stills_only.png`, labelled
-"still-only - NO ANIMATION", so the stills rather than the empty screenrec are
-what appears in a side-by-side.
+What is actually true, stated as separate claims:
+
+- **The animation works** - verified numerically above. It is not a stub.
+- **No rendered clip exists.** The contender's own NOTES.md says this, and the cause
+  (the Apprentice licence rejecting UsdLux light prims in `husk`) is documented.
+- **`houdini/flight_screenrec.mov` contains no Houdini imagery.** That specific 8 s
+  capture shows a blank Houdini viewport with the Blender render playing in QuickTime
+  beside it. A bad capture, not a bad scene - and I should have said exactly that
+  instead of impugning the work.
+- **The three hero stills are the only shipped visuals**: upscaled from 1280x720
+  Apprentice renders, white background, watermarked.
+
+Honest framing for any comparison: **a finished 1080p Blender render against a working
+Houdini animation that was never successfully rendered or captured.** Not "Houdini did
+nothing". The gap is in the last mile - rendering and capture - not in the rig, the sim,
+or the staging.
+
+Lesson worth keeping: I verified a *file* (the screenrec) and then made a claim about a
+*deliverable*. Those are different scopes. Verify the artefact you are actually judging.
