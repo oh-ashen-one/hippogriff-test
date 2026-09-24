@@ -110,3 +110,33 @@ Two export traps worth remembering:
 still there - `hippogriff_flight.blend` still renders washed out at exposure 0.
 The asset export sidesteps it (a viewer lights the model itself), but any future
 render from that scene should fix the lighting, not the material.
+
+## Correction: the Houdini screen recording contains no Houdini content
+
+The earlier note on `houdini/flight_screenrec.mov` (added with the recolour
+commit) said it was "the GUI viewport capture of the completed animation". That
+was wrong, and the 0.5 s frame I originally checked did not show it.
+
+Sampled across the full 8 s (contact sheet of every 50th frame, plus a
+full-resolution crop of the Houdini window for the whole timeline):
+
+- The Houdini viewport is **empty for the entire clip** - dark grey, just the
+  network editor and parameter panes, no creature, no geometry, no render.
+- The only creature on screen is the **Blender render playing in QuickTime**,
+  beside it.
+- The clip ends on a black frame.
+
+So the Houdini contender produced **no moving-image evidence at all**. Its
+*hero stills* are the whole of its visual output, and they are three
+1920x1080 images upscaled from 1280x720 Apprentice renders: pure white
+background (no sky, no environment), untextured, and each carrying the Houdini
+watermark.
+
+Consequence for the comparison: it is not render-vs-render, and not even
+render-vs-viewport. It is a finished 1080p Blender render against three
+watermarked stills. Any future "Houdini vs Blender" claim should say that
+plainly.
+
+`make_labeled_reviews.sh` now also emits `3_houdini_stills_only.png`, labelled
+"still-only - NO ANIMATION", so the stills rather than the empty screenrec are
+what appears in a side-by-side.
